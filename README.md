@@ -7,12 +7,12 @@ It combines deep learning detection (YOLOv8), tracking (ByteTrack), Bird’s Eye
 
 ## 📌 Features
 
-- 🧠 **Vehicle Detection & Tracking** — YOLOv8 + ByteTrack for robust multi-object tracking  
-- 📐 **Camera Calibration** — BEV transformation using homography for real-world mapping  
-- 📏 **Queue Length Measurement** — Hybrid Direct + Density-based measurement  
-- 🧮 **Temporal Smoothing** — Kalman Filter + EMA for stable output  
-- 📊 **Performance Evaluation** — MAE, RMSE, MAPE, R², Accuracy, F1 score  
-- 🧪 **Ablation Study & Error Analysis** — To evaluate each component’s contribution
+- **Vehicle Detection & Tracking** : YOLOv8 + ByteTrack for robust multi-object tracking  
+- **Camera Calibration** : BEV transformation using homography for real-world mapping  
+- **Queue Length Measurement** : Hybrid Direct + Density-based measurement  
+- **Temporal Smoothing** : Kalman Filter + EMA for stable output  
+- **Performance Evaluation** : MAE, RMSE, MAPE, R², Accuracy, F1 score  
+- **Ablation Study & Error Analysis** : To evaluate each component’s contribution
 
 ---
 
