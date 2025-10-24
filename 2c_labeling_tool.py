@@ -31,7 +31,7 @@ for i, row in df.iterrows():
     cv2.imshow("Labeling Tool", frame)
     key = cv2.waitKey(0) & 0xFF
 
-    if key == 27:  # ESC keluar
+    if key == 27:
         break
     elif key == ord("q"):
         df.at[i, "label"] = "QUEUE"

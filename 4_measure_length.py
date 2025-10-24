@@ -25,8 +25,8 @@ dst_pts = np.float32([
 ])
 
 M = cv2.getPerspectiveTransform(src_pts, dst_pts)
-AVG_VEHICLE_LENGTH_M = 4.5
 
+AVG_VEHICLE_LENGTH_M = 4.5
 
 def measure_queue_direct(queuing_vehicles, M, PPM):
     if len(queuing_vehicles) < 2:
@@ -38,7 +38,6 @@ def measure_queue_direct(queuing_vehicles, M, PPM):
     queue_end_px = np.max(y_coords)
     length_pixels = queue_end_px - queue_start_px
     return length_pixels / PPM
-
 
 def measure_queue_density(queuing_vehicles, M, PPM, frame_shape):
     if len(queuing_vehicles) < 2:
@@ -56,6 +55,7 @@ def measure_queue_density(queuing_vehicles, M, PPM, frame_shape):
         if density_map_values.max() > density_map_values.min():
             density_map = (density_map_values - density_map_values.min()) / (density_map_values.max() - density_map_values.min())
     except LinAlgError:
+        print(f"  [WARNING] KDE failed for frame due to collinear data. Density measurement will be 0.")
         return 0
     density_bev = cv2.warpPerspective(density_map, M, (bev_width_px, bev_height_px))
     _, binary = cv2.threshold((density_bev * 255).astype(np.uint8), 50, 255, cv2.THRESH_BINARY)
@@ -69,19 +69,23 @@ def measure_queue_density(queuing_vehicles, M, PPM, frame_shape):
     length_pixels = max(rect[1])
     return length_pixels / PPM
 
-
 try:
     df = pd.read_csv(TRACKED_DATA_CSV)
 except FileNotFoundError:
+    print(f"[ERROR] File '{TRACKED_DATA_CSV}' tidak ditemukan. Jalankan skrip 3 terlebih dahulu.")
     exit()
 
 cap = cv2.VideoCapture(VIDEO_PATH)
 ret, frame = cap.read()
 if not ret:
+    print("[ERROR] Tidak bisa membaca video. Menggunakan default frame size 1280x720.")
     frame_shape = (720, 1280, 3)
 else:
     frame_shape = frame.shape
 cap.release()
+print(f"[INFO] Menggunakan ukuran frame: {frame_shape}")
+
+print("[INFO] Memulai perhitungan panjang antrian mentah...")
 
 results = []
 grouped = df.groupby("frame_id")
@@ -90,6 +94,7 @@ all_frame_ids = sorted(df['frame_id'].unique())
 for frame_id in all_frame_ids:
     group = grouped.get_group(frame_id)
     queuing_vehicles = group[group['is_queuing'] == 1]
+    print(f"Frame {frame_id}: ", end="")
     if len(queuing_vehicles) < 2:
         l_direct, l_density, l_compensated = 0, 0, 0
     else:
@@ -98,6 +103,7 @@ for frame_id in all_frame_ids:
         alpha = 0.7 if len(queuing_vehicles) > 5 else 0.4
         l_final = alpha * l_direct + (1 - alpha) * l_density
         l_compensated = l_final + 0.5 * AVG_VEHICLE_LENGTH_M
+    print(f"Direct={l_direct:.2f}m, Density={l_density:.2f}m, Hybrid={l_compensated:.2f}m")
     results.append({
         "frame_id": frame_id,
         "length_direct_m": round(l_direct, 2),
@@ -108,3 +114,6 @@ for frame_id in all_frame_ids:
 if results:
     results_df = pd.DataFrame(results)
     results_df.to_csv(OUTPUT_CSV, index=False)
+    print(f"\n[INFO] Perhitungan selesai. Hasil tersimpan di '{OUTPUT_CSV}'.")
+else:
+    print("\n[INFO] Perhitungan selesai. Tidak ada data yang dihasilkan.")

@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from filterpy.kalman import KalmanFilter
-from filterpy.common import Q_discrete_white_noise
 
 RAW_LENGTHS_CSV = "queue_lengths_raw.csv"
 FINAL_OUTPUT_CSV = "queue_lengths_final.csv"
@@ -14,6 +13,7 @@ class QueueLengthKalmanFilter:
         self.kf.H = np.array([[1., 0.]])
         self.kf.P *= 1000.
         self.kf.R = np.array([[r_noise]])
+        from filterpy.common import Q_discrete_white_noise
         self.kf.Q = Q_discrete_white_noise(dim=2, dt=dt, var=q_noise)
 
     def update(self, measurement):
@@ -41,14 +41,19 @@ def smooth_ema(new_value, prev_smoothed, alpha=0.3):
 try:
     df = pd.read_csv(RAW_LENGTHS_CSV)
 except FileNotFoundError:
+    print(f"[ERROR] File '{RAW_LENGTHS_CSV}' tidak ditemukan. Jalankan skrip 4 terlebih dahulu.")
     exit()
+
+print("[INFO] Memulai proses smoothing hasil pengukuran...")
 
 kalman_filter = QueueLengthKalmanFilter()
 measurements_history = []
 smoothed_results = []
 prev_ema_value = None
 
-if not df.empty:
+if df.empty:
+    print("[WARNING] File 'queue_lengths_raw.csv' kosong. Tidak ada yang bisa diproses.")
+else:
     raw_lengths = df['length_hybrid_m'].values
     for i, raw_length in enumerate(raw_lengths):
         measurements_history.append(raw_length)
@@ -57,6 +62,7 @@ if not df.empty:
         final_length = smooth_ema(kalman_output, prev_ema_value)
         prev_ema_value = final_length
         final_length = max(0, final_length)
+        print(f"Frame {df['frame_id'].iloc[i]}: Raw={raw_length:.2f}m -> Smoothed={final_length:.2f}m")
         smoothed_results.append({
             "frame_id": df['frame_id'].iloc[i],
             "raw_hybrid_m": raw_length,
@@ -66,3 +72,6 @@ if not df.empty:
 if smoothed_results:
     results_df = pd.DataFrame(smoothed_results)
     results_df.to_csv(FINAL_OUTPUT_CSV, index=False)
+    print(f"\n[INFO] Proses smoothing selesai. Hasil akhir tersimpan di '{FINAL_OUTPUT_CSV}'.")
+else:
+    print("\n[INFO] Proses smoothing selesai. Tidak ada data yang dihasilkan.")

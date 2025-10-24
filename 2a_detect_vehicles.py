@@ -7,7 +7,7 @@ from ultralytics import YOLO
 frames_dir = "processed_frames"
 roi_mask_path = "roi_mask.png"
 output_csv = "detections.csv"
-model_path = "yolov8m.pt"
+model_path = "runs/detect/yolov8m_cctv_hasil_v15/weights/best.pt"
 
 print("[INFO] Memuat model YOLO...")
 model = YOLO(model_path)
@@ -16,7 +16,7 @@ print("[INFO] Memuat ROI mask...")
 roi_mask = cv2.imread(roi_mask_path, cv2.IMREAD_GRAYSCALE)
 roi_mask = cv2.threshold(roi_mask, 127, 255, cv2.THRESH_BINARY)[1]
 
-vehicle_classes = {"car", "bus", "truck", "motorcycle"}
+vehicle_classes = {"Car","truck", "motorcycle"}
 
 results_data = []
 
@@ -55,4 +55,4 @@ for frame_name in sorted(os.listdir(frames_dir)):
 
 df = pd.DataFrame(results_data)
 df.to_csv(output_csv, index=False)
-print(f"[INFO] Selesai. Hasil tersimpan di {output_csv}")
+print(f"[INFO] Selesai! Hasil tersimpan di {output_csv}")
